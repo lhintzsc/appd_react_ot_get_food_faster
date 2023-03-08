@@ -1,40 +1,58 @@
 version: '3.3'
 services:
   postgres:
-    container_name: app_db
+    container_name: getfoodfaster_postgres
     image: postgres:latest
     restart: always
     environment:
-      - POSTGRES_USER=${SECRET_APP_USER}
-      - POSTGRES_PASSWORD=${SECRET_APP_PASSWORD}
+      POSTGRES_USER: "${SECRET_APP_USER}"
+      POSTGRES_PASSWORD: "${SECRET_APP_PASSWORD}"
     ports:
       - '5432:5432'
     volumes: 
-      - type: bind
-        source: /var/docker/getfoodfaster/postgres
-        target: /var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/postgres/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+    networks:
+      food-network:
+        ipv4_address: 192.168.0.10
 
   pgadmin:
-    container_name: tool_pgadmin
+    container_name: getfoodfaster_pgadmin
     image: dpage/pgadmin4
     restart: always
     ports:
       - "5050:80"
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${SECRET_APP_MAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${SECRET_APP_PASSWORD}
+      PGADMIN_DEFAULT_EMAIL: "${SECRET_APP_MAIL}"
+      PGADMIN_DEFAULT_PASSWORD: "${SECRET_APP_PASSWORD}" 
     volumes:
-      - type: bind
-        source: /var/docker/getfoodfaster/pgadmin
-        target: /var/lib/pgadmin
+      - pgadmin-data:/var/lib/pgadmin
+      - ./database/pgadmin/servers.json:/pgadmin4/servers.json
+    networks:
+      food-network:
+        ipv4_address: 192.168.0.11
 
   cloudbeaver:
-    container_name: tool_sqlclient
+    container_name: getfoodfaster_cloudbeaver
     image: dbeaver/cloudbeaver:latest
     restart: always
     ports:
       - "5051:8978"
     volumes:
-      - type: bind
-        source: /var/docker/getfoodfaster/cloudbeaver
-        target: /var/cloudbeaver/workspace
+      - cloudbeaver-data:/var/cloudbeaver/workspace
+    networks:
+      food-network:
+        ipv4_address: 192.168.0.12
+
+volumes:
+  postgres-data:
+  pgadmin-data:
+  cloudbeaver-data:
+
+networks:
+  food-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      - subnet: "192.168.0.0/24"
