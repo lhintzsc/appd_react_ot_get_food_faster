@@ -1,0 +1,40 @@
+version: '3.3'
+services:
+  postgres:
+    container_name: app_db
+    image: postgres:latest
+    restart: always
+    environment:
+      - POSTGRES_USER=${SECRET_APP_USER}
+      - POSTGRES_PASSWORD=${SECRET_APP_PASSWORD}
+    ports:
+      - '5432:5432'
+    volumes: 
+      - type: bind
+        source: /var/docker/getfoodfaster/postgres
+        target: /var/lib/postgresql/data
+
+  pgadmin:
+    container_name: tool_pgadmin
+    image: dpage/pgadmin4
+    restart: always
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${SECRET_APP_MAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${SECRET_APP_PASSWORD}
+    volumes:
+      - type: bind
+        source: /var/docker/getfoodfaster/pgadmin
+        target: /var/lib/pgadmin
+
+  cloudbeaver:
+    container_name: tool_sqlclient
+    image: dbeaver/cloudbeaver:latest
+    restart: always
+    ports:
+      - "5051:8978"
+    volumes:
+      - type: bind
+        source: /var/docker/getfoodfaster/cloudbeaver
+        target: /var/cloudbeaver/workspace
