@@ -44,6 +44,16 @@ services:
       food-network:
         ipv4_address: 192.168.0.12
 
+  recipe_service:
+    container_name: getfoodfaster_service_recipe
+    image: getfoodfaster/recipe:latest
+    restart: always
+    ports:
+      - "3010:3000"
+    networks:
+      food-network:
+        ipv4_address: 192.168.0.30
+
 volumes:
   postgres-data:
   pgadmin-data:

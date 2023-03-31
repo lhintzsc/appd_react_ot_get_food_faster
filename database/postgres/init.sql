@@ -5,8 +5,8 @@ CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
 -- create tables
 CREATE TABLE public."Recipe" (
     "RECIPE_PK" uuid DEFAULT public.uuid_generate_v4() NOT NULL,
-    "NAME" character(100) NOT NULL,
-    "DESCRIPTION" character(1000) NOT NULL,
+    "NAME" VARCHAR NOT NULL,
+    "DESCRIPTION" VARCHAR NOT NULL,
     "IMAGE" bytea
 );
 
@@ -22,7 +22,7 @@ CREATE TABLE public."Rating" (
 
 CREATE TABLE public."Comment" (
     "COMMENT_PK" uuid DEFAULT public.uuid_generate_v4() NOT NULL,
-    "COMMENT" character(300) NOT NULL,
+    "COMMENT" VARCHAR NOT NULL,
     "RECIPE_FK" uuid NOT NULL
 );
 
