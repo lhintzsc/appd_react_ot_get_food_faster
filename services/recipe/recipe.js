@@ -6,13 +6,15 @@ const uuid = require('uuid')
 
 // connection details of database
 const cn = {
-  host: '192.168.0.10',
-  port: 5432,
-  database: 'lhintzsc',
-  user: 'lhintzsc',
-  password: '',
+  host: process.env.POSTGRES_HOST,
+  port: process.env.POSTGRES_PORT,
+  database: process.env.POSTGRES_USER,
+  user: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
   max: 30 // use up to 30 connections
 };
+
+console.log('cn:',cn)
 
 // load our stuff
 const db = pgp(cn);
@@ -44,132 +46,229 @@ const parseJSON = function(req,res,next){
   next()
 }
 
-
-// count existing recipes
-const countExistingRecipes = function (req,res,next) {
-
-  console.log('countExistingRecipes');
-  console.log('--------------------');
-
-  res.locals.count = 0;
-
-  console.log('res.local.jsonObject.name before count:',res.locals.jsonObject.name);
-  console.log('res.locals.count count:',res.locals.count);
-  console.log('was neues');
-
-  //db.one(
-  //  'SELECT count(*) from public."Recipe" where "NAME" = $1;', 
-  //  [ 'Test Name' ] //res.locals.jsonObject.name]
-  //).then(data => {
-  //    console.log('data.count:',Number(data.count));
-  //    res.locals.count = Number(data.count);
-  //}).catch(error => {
-  //  console.log('ERROR:', error);
-  //})
-
-  db.any(
-    'SELECT count(*) from public."Recipe";'
-  ).then(data => {
-    console.log('test output');
-    console.log('data',data);
-    console.log('data.count:',Number(data.count));
-  }).catch(error => {
-      console.log('ERROR:', error); // print error;
-  })
-
-  console.log('res.local.jsonObject.name after count:',res.locals.jsonObject.name);
-  console.log('res.locals.count after:',res.locals.count);
-
-
-  console.log('');
-  next()
-
-}
-
-const insertRecipe = function (req, res, next){
-
-  console.log('insertRecipe')
-  console.log('------------')
-  
-  var uuidv4 = uuid.v4()
-  console.log('res.locals.count:', res.locals.count); // print new user id;
-  console.log('uuid:', uuidv4); // print new user id;
-  console.log('name:', res.locals.jsonObject.name); // print new user id;
-  console.log('desc:', res.locals.jsonObject.description); // print new user id;
-  console.log('image:', res.locals.jsonObject.image); // print new user id;
-
-  if (res.locals.count == 0){
-
-
-    db.one(
-      'INSERT INTO public."Recipe" ("RECIPE_PK", "NAME", "DESCRIPTION", "IMAGE") VALUES($1, $2, $3, $4);',
-      [
-        uuidv4,
-        res.locals.jsonObject.name,
-        res.locals.jsonObject.description,
-        res.locals.jsonObject.image
-      ]
-    )
-    .then(data => {
-        console.log(uuidv4); // print new user id;
-    })
-    .catch(error => {
-        console.log('ERROR:', error); // print error;
-    })
-
-  }else{
-    return
-  }
-
-  console.log('');
-  next()
-
-}
-
 app.use(parseJSON)
 
 app.get('/recipe', (req, res) => {
-  res.send('list all recipes')
+
+  console.log('');
+  console.log('GET /recipe');
+  console.log('-----------------');
+
+  if (req.query.name){
+    // return recipe with name
+    db.one(
+      'SELECT * from public."Recipe" where "NAME" = $1;', 
+      [ req.query.name ]
+    ).then(data => {
+        // log input and output
+        console.log('data:',data);
+        console.log('query name:',req.query.name);
+        // return json respone
+        res.status(200)
+        res.json({ 
+          recipe_pk: data.RECIPE_PK,
+          name: data.NAME,
+          description: data.DESCRIPTION
+          //image: data.IMAGE
+        });
+    }).catch(error => {
+      console.log('ERROR:', error);
+    })
+  }else{
+        res.json({});
+  }
+
+  console.log('');
+
+})
+
+app.get('/recipe/count', (req, res) => {
+
+  console.log('');
+  console.log('GET /recipe/count');
+  console.log('-----------------');
+
+  if (!req.query.name){
+    // count all recipes
+    db.one(
+      'SELECT count(*) from public."Recipe";'
+    ).then(data => {
+        // log input and output
+        console.log('data:',data);
+        console.log('query name:',req.query.name);
+        console.log('data.count:',Number(data.count));
+        // return json respone
+        res.status(200)
+        res.json({ 
+          name: req.query.name ,
+          count: Number(data.count)
+        });
+    }).catch(error => {
+      console.log('ERROR:', error);
+    })
+  }else{
+    // count recipes with a specific name
+    db.one(
+      'SELECT count(*) from public."Recipe" where "NAME" = $1;', 
+      [ req.query.name ]
+    ).then(data => {
+        // log input and output
+        console.log('data:',data);
+        console.log('query name:',req.query.name);
+        console.log('data.count:',Number(data.count));
+        // return json respone
+        res.status(200)
+        res.json({ 
+          name: req.query.name ,
+          count: Number(data.count)
+        });
+    }).catch(error => {
+      console.log('ERROR:', error);
+    })
+  }
+
+  console.log('')
+
 })
 
 app.post(
   '/recipe', 
   async (req, res) => {
 
-  let checkRecipeSchema = await checkRecipeSchema(req)
-  //let countExistingRecipes = await countExistingRecipes()
-  //let insertRecipe = await insertRecipe()
+  console.log('');
+  console.log('POST /recipe');
+  console.log('-----------------');
 
-  console.log(res.locals.jsonObject.name)
-  console.log(res.locals.count)
-  res.send('Data Received: ' + JSON.stringify(req.body));
+  // create uuid
+  var uuidv4 = uuid.v4()
+
+  // validate schema
+  if(req.get("Content-Type")!="application/json") { 
+    req.status(401).send("Invalid header format");
+    return;
+  }try{
+    validator.validate(req.body,recipeSchema,{"throwError":true});
+  }catch(error){
+    req.status(401).end("Invalid body format: " + error.message);
+    return;
+  }
+
+  // print input parameter
+  console.log('uuid:', uuidv4); // print new user id;
+  console.log('name:', res.locals.jsonObject.name); // print new user id;
+  console.log('desc:', res.locals.jsonObject.description); // print new user id;
+  console.log('image:',res.locals.jsonObject.image); // print new user id;
+
+  if (res.locals.jsonObject.name){
+    // search if name exists already in the DB
+    db.one(
+      'SELECT count(*) from public."Recipe" where "NAME" = $1;', 
+      [ res.locals.jsonObject.name ]
+    ).then(data => {
+        // log input and output
+        console.log('data:',data);
+        console.log('query name:',req.query.name);
+        console.log('data.count:',Number(data.count));
+        if (Number(data.count)==0){
+          // insert new database record
+          console.log('new name');
+          db.none(
+            'INSERT INTO public."Recipe" ("RECIPE_PK", "NAME", "DESCRIPTION", "IMAGE") VALUES($1, $2, $3, $4);',
+            [
+              uuidv4,
+              res.locals.jsonObject.name,
+              res.locals.jsonObject.description,
+              res.locals.jsonObject.image
+            ]
+          )
+          .then(data => {
+              // return new recipe
+              console.log('uuid:',uuidv4);
+              res.status(200)
+              res.json({ 
+                recipe_pk: uuidv4,
+                name: res.locals.jsonObject.name,
+                description: res.locals.jsonObject.description
+                //image: data.IMAGE
+              });
+          })
+          .catch(error => {
+              console.log('ERROR:', error); // print error;
+          })
+        }else{
+          console.log('existing name');
+          db.one(
+            'SELECT * from public."Recipe" where "NAME" = $1;', 
+            [ res.locals.jsonObject.name ]
+          ).then(data => {
+              // log input and output
+              console.log('data:',data);
+              console.log('query name:',req.query.name);
+              // return json respone
+              res.status(409)
+              res.json({ 
+                recipe_pk: data.RECIPE_PK,
+                name: data.NAME,
+                description: data.DESCRIPTION
+        //        //image: data.IMAGE
+              });
+          }).catch(error => {
+            console.log('ERROR:', error);
+          })
+        }
+    })
+  }else{
+      console.log('no name provided');
+  }
+
+  console.log('')
 
 })
 
+
 app.delete('/recipe', (req, res) => {
-  res.send('delete existing recipe')
+
+  console.log('');
+  console.log('DELETE /recipe');
+  console.log('-----------------');
+
+  if (req.query.name){
+    console.log('query name found');
+    // count recipes with a specific name
+    db.one(
+      'SELECT count(*) from public."Recipe" where "NAME" = $1;', 
+      [ req.query.name ]
+    ).then(data => {
+        // log input and output
+        console.log('data:',data);
+        console.log('query name:',req.query.name);
+        console.log('data.count:',Number(data.count));
+
+        if (Number(data.count)==1){
+          // insert new database record
+          console.log('existing name');
+          db.none(
+            'DELETE FROM public."Recipe" r where r."NAME"=$1;'
+            ,
+            [ req.query.name ]
+          )
+          .then(data => {
+              res.status(204).end()
+          })
+          .catch(error => {
+              console.log('ERROR:', error); // print error;
+          })
+        }else{
+            res.status(404).end()
+        }
+    }).catch(error => {
+      console.log('ERROR:', error);
+    })
+  }
+  console.log('')
+
 })
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
 })
-
-// middleware to validate schema
-async function checkRecipeSchema(request){
-
-  console.log('checkRecipeSchema')
-  console.log('-----------------')
-
-  if(request.get("Content-Type")!="application/json") { 
-    request.status(401).send("Invalid header format");
-    return;
-  }try{
-    validator.validate(req.body,recipeSchema,{"throwError":true});
-  }catch(error){
-    request.status(401).end("Invalid body format: " + error.message);
-    return;
-  }
-
-  console.log('');
-
-}

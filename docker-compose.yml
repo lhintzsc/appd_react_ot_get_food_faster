@@ -48,11 +48,26 @@ services:
     container_name: getfoodfaster_service_recipe
     image: getfoodfaster/recipe:latest
     restart: always
+    environment:
+      POSTGRES_HOST: 192.168.0.10
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: "${SECRET_APP_USER}"
+      POSTGRES_PASSWORD: "${SECRET_APP_PASSWORD}"
     ports:
       - "3010:3000"
     networks:
       food-network:
         ipv4_address: 192.168.0.30
+
+  #rating_service:
+  #  container_name: getfoodfaster_service_rating
+  #  image: getfoodfaster/rating:latest
+  #  restart: always
+  #  ports:
+  #    - "3011:3000"
+  #  networks:
+  #    food-network:
+  #      ipv4_address: 192.168.0.31
 
 volumes:
   postgres-data:
