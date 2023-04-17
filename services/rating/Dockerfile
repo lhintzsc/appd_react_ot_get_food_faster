@@ -6,7 +6,7 @@ WORKDIR ${SERVICE_FOLDER}/
 
 # install dependencies
 ADD ./package.json ${SERVICE_FOLDER}/
-#RUN npm install -g npm@9.6.2
+#RUN npm install -g npm@9.6.1
 RUN npm install \
     express \ 
     body-parser \ 
