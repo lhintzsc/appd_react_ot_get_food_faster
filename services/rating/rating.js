@@ -338,7 +338,7 @@ app.delete('/rating', (req, res) => {
   console.log('delete rating for recipe')
 
   if (req.query.recipe_fk){
-    // count recipes with a specific name
+    // count rating for a specific recipe
     db.one(
       'SELECT count(*) FROM public."Rating" WHERE "RECIPE_FK" = $1;', 
       [ req.query.recipe_fk ]
@@ -349,7 +349,7 @@ app.delete('/rating', (req, res) => {
         console.log('data.count:',Number(data.count));
 
         if (Number(data.count)==1){
-          // insert new database record
+          // delete rating for a specific recipe
           console.log('existing name');
           db.none(
             'DELETE FROM public."Rating" WHERE "RECIPE_FK"=$1;'

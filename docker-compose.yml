@@ -74,6 +74,21 @@ services:
       food-network:
         ipv4_address: 192.168.0.31
 
+  comment_service:
+    container_name: getfoodfaster_service_comment
+    image: getfoodfaster/comment:latest
+    restart: always
+    environment:
+      POSTGRES_HOST: 192.168.0.10
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: "${SECRET_APP_USER}"
+      POSTGRES_PASSWORD: "${SECRET_APP_PASSWORD}"
+    ports:
+      - "3012:3000"
+    networks:
+      food-network:
+        ipv4_address: 192.168.0.32
+
 volumes:
   postgres-data:
   pgadmin-data:

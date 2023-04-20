@@ -12,7 +12,7 @@
 #echo "rm $ID"
 #docker rm $ID; sleep 5
 
-NAME="getfoodfaster_service_rating"
+NAME="getfoodfaster_service_comment"
 
 docker ps --format "table {{.Names}}\t{{.ID}}" | grep $NAME
 ID=`docker ps --format "table {{.Names}}\t{{.ID}}" | grep $NAME | awk '{print $2}'`
@@ -34,6 +34,11 @@ cd ../..
 echo "build services"
 cd services/rating
 docker build -t getfoodfaster/rating:latest  .
+cd ../..
+
+echo "build services"
+cd services/comment
+docker build -t getfoodfaster/comment:latest  .
 cd ../..
 
 echo "docker compuse up"
