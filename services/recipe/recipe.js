@@ -54,7 +54,7 @@ app.get('/recipe', (req, res) => {
   console.log('GET /recipe');
   console.log('-----------------');
 
-  if (req.query.name){
+  if (req.query.name && !req.query.recipe_pk){
     // return recipe with name
     db.one(
       'SELECT * from public."Recipe" where "NAME" = $1;', 
@@ -74,8 +74,49 @@ app.get('/recipe', (req, res) => {
     }).catch(error => {
       console.log('ERROR:', error);
     })
+  }else if (!req.query.name && req.query.recipe_pk){
+    // return recipe with primary key
+    db.one(
+      'SELECT * from public."Recipe" where "RECIPE_PK" = $1;', 
+      [ req.query.recipe_pk ]
+    ).then(data => {
+        // log input and output
+        console.log('data:',data);
+        console.log('query recipe_pk:',req.query.recipe_pk);
+        // return json respone
+        res.status(200)
+        res.json({ 
+          recipe_pk: data.RECIPE_PK,
+          name: data.NAME,
+          description: data.DESCRIPTION
+          //image: data.IMAGE
+        });
+    }).catch(error => {
+      console.log('ERROR:', error);
+    })
   }else{
-        res.json({});
+    db.any(
+      'SELECT * from public."Recipe"', 
+      [ req.query.recipe_pk ]
+    ).then(data => {
+
+        console.log('data:', data);
+
+        var result = [];
+        for (var i in data) {
+          result.push({
+            recipe_pk: data[i].RECIPE_PK, 
+            name: data[i].NAME
+          });
+        }
+        
+        res.contentType('application/json');
+        res.status(200)
+        res.send(JSON.stringify(result));
+
+    }).catch(error => {
+      console.log('ERROR:', error);
+    })
   }
 
   console.log('');
