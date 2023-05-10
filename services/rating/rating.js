@@ -110,24 +110,26 @@ app.post('/rating', (req, res) => {
   console.log('POST /rating');
   console.log('-----------------');
 
-  var uuidv4 = uuid.v4()
+  var uuidv4 = uuid.v4();
 
   sql=
   'SELECT r."RECIPE_PK", r2."RECIPE_FK", r2."RATING_PK", r2."N1STARS", r2."N2STARS", r2."N3STARS", r2."N4STARS", r2."N5STARS" '+
   'FROM public."Recipe" r '+
   'LEFT JOIN public."Rating" r2 ON (r2."RECIPE_FK" = r."RECIPE_PK") '+
-  'WHERE r."RECIPE_PK" = $1'
+  'WHERE r."RECIPE_PK" = $1;'
+
   console.log('sql:',sql);
 
-  if (req.query.recipe_pk && req.query.rating){
+  if (req.query.recipe_fk && req.query.rating){
     // return recipe with name
     db.one(
-      sql,[ req.query.recipe_pk ]
+      sql,[ req.query.recipe_fk ]
     ).then(data => {
       // log input and output
       console.log('data:',data);
-      console.log('query recipe_pk:',req.query.recipe_pk);
-      console.log('data rating_pk:', data.RATING_PK);
+      console.log('query recipe_pk:',req.query.recipe_fk);
+      console.log('data recipe_pk:', data.RECIPE_PK);
+      console.log('data recipe_fk:', data.RECIPE_FK);
       if (
         data.RECIPE_PK != null && 
         data.RECIPE_FK == null && 
@@ -204,9 +206,12 @@ app.post('/rating', (req, res) => {
             '("RATING_PK", "N1STARS", "N2STARS", "N3STARS", "N4STARS", "N5STARS", "RECIPE_FK") '+
             'VALUES($1, $2, $3, $4, $5, $6, $7);'
 
-        db.one(
-          sql,[ uuidv4, String(0), String(0), String(0), String(0), String(0), data.RATING_PK ]
+        console.log('sql',sql)
+
+        db.none(
+          sql,[ String(uuidv4), String(0), String(0), String(0), String(0), String(0), String(data.RECIPE_PK) ]
         ).then(data2 => {
+          console.log('INSERT SQL');
           res.status(200)
           res.json({ 
             rating_pk: data.RATING_PK,
@@ -218,7 +223,7 @@ app.post('/rating', (req, res) => {
             n5stars: 0,
             stars_avg: 0,
             stars_num: 0
-          });
+          }).end();
         }).catch(error => {
           res.status(404).end()
         })
@@ -264,12 +269,21 @@ app.post('/rating', (req, res) => {
               'SET "N1STARS"=$1, "N2STARS"=$2, "N3STARS"=$3, "N4STARS"=$4, "N5STARS"=$5 '+
               'WHERE "RATING_PK" = $6;';
 
+        console.log('sql',sql);
+        console.log('s1',s1);
+        console.log('s2',s2);
+        console.log('s3',s3);
+        console.log('s4',s4);
+        console.log('s5',s5);
+        console.log('RATING_PK',data.RATING_PK);
+
         db.none(
-          sql,[ String(s1), String(s2), String(s3), String(s4), String(s5), data.RATING_PK ]
+          sql,[ String(s1), String(s2), String(s3), String(s4), String(s5), String(data.RATING_PK) ]
         ).then(data2 => {
           numstars = s1+s2+s3+s4+s5;
           avgstars = (1.0*s1+2.0*s2+3.0*s3+4.0*s4+5.0*s5)/numstars;
-          res.status(200)
+          console.log('numstars',numstars);
+          res.status(200);
           res.json({ 
             rating_pk: data.RATING_PK,
             recipe_fk: data.RECIPE_FK,
@@ -280,7 +294,7 @@ app.post('/rating', (req, res) => {
             n5stars: s5,
             stars_avg: avgstars,
             stars_num: numstars
-          });
+          }).end();
         }).catch(error => {
           res.status(404).end()
         })

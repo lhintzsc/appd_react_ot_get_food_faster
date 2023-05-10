@@ -56,21 +56,24 @@ app.get('/recipe', (req, res) => {
 
   if (req.query.name && !req.query.recipe_pk){
     // return recipe with name
-    db.one(
-      'SELECT * from public."Recipe" where "NAME" = $1;', 
-      [ req.query.name ]
+    db.any(
+      'SELECT * FROM public."Recipe" WHERE "NAME" LIKE $1;', 
+      [ String(req.query.name)+'%' ]
     ).then(data => {
-        // log input and output
-        console.log('data:',data);
-        console.log('query name:',req.query.name);
-        // return json respone
+        console.log('data:', data);
+
+        var result = [];
+        for (var i in data) {
+          result.push({
+            recipe_pk: data[i].RECIPE_PK, 
+            name: data[i].NAME
+          });
+        }
+        
+        res.contentType('application/json');
         res.status(200)
-        res.json({ 
-          recipe_pk: data.RECIPE_PK,
-          name: data.NAME,
-          description: data.DESCRIPTION
-          //image: data.IMAGE
-        });
+        res.send(JSON.stringify(result));
+
     }).catch(error => {
       console.log('ERROR:', error);
     })
